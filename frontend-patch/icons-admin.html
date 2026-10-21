@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MyJournal+ — Admin Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --sidebar-w: 240px; --header-h: 56px;
+      --bg: #070b14; --bg-card: #0d1320; --bg-elev: #121a2b;
+      --border: rgba(255,255,255,0.07); --text: #eaf2ff; --muted: #8b9bb4;
+      --accent: #7b6cff; --accent2: #4dd3ff; --success: #3ddc97;
+      --danger: #ff6b6b; --warning: #ffc857; --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body { font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+    .hidden { display: none !important; }
+    #loginScreen { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: linear-gradient(160deg,#071021,#0b1220 50%,#0a0f1c); }
+    .login-card { width: 100%; max-width: 400px; padding: 32px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+    .login-card h1 { font-family: Oswald, sans-serif; font-size: 24px; margin: 0 0 4px; background: linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .login-card .sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+    .login-card input { width: 100%; padding: 12px 14px; margin-bottom: 12px; background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 14px; }
+    .login-card input:focus { outline: none; border-color: var(--accent); }
+    .login-error { color: var(--danger); font-size: 13px; margin-bottom: 12px; min-height: 18px; }
+    #appShell { display: none; width: 100%; min-height: 100vh; }
+    #appShell.ready { display: flex; }
+    .sidebar { width: var(--sidebar-w); flex-shrink: 0; background: var(--bg-card); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+    .sidebar-brand { padding: 20px 18px; border-bottom: 1px solid var(--border); font-family: Oswald, sans-serif; font-size: 18px; font-weight: 700; letter-spacing: .5px; }
+    .sidebar-brand span { color: var(--accent2); font-size: 11px; font-family: Inter, sans-serif; display: block; font-weight: 500; margin-top: 2px; }
+    .nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; cursor: pointer; color: var(--muted); font-size: 13.5px; font-weight: 500; transition: all .15s; margin-bottom: 2px; border: none; background: none; width: 100%; text-align: left; }
+    .nav-item:hover { background: rgba(255,255,255,.04); color: var(--text); }
+    .nav-item.active { background: rgba(123,108,255,.15); color: var(--accent2); }
+    .nav-item .icon { font-size: 16px; width: 22px; text-align: center; }
+    .nav-section { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); padding: 14px 12px 6px; opacity: .7; }
+    .sidebar-foot { padding: 14px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .topbar { height: var(--header-h); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); background: rgba(13,19,32,.85); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 20; }
+    .topbar h2 { margin: 0; font-size: 16px; font-weight: 600; }
+    .topbar-actions { display: flex; gap: 8px; align-items: center; }
+    .content { padding: 24px; flex: 1; overflow-y: auto; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; border: 1px solid var(--border); background: rgba(255,255,255,.04); color: var(--text); cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .btn:hover { background: rgba(255,255,255,.08); }
+    .btn.primary { background: linear-gradient(135deg,var(--accent),#5b4fd6); border-color: transparent; color: #fff; }
+    .btn.primary:hover { filter: brightness(1.08); }
+    .btn.danger { background: rgba(255,107,107,.15); border-color: rgba(255,107,107,.3); color: #ff8a8a; }
+    .btn.small { padding: 6px 10px; font-size: 12px; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(170px,1fr)); gap: 14px; margin-bottom: 24px; }
+    .kpi { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+    .kpi .label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .kpi .value { font-size: 26px; font-weight: 700; letter-spacing: -.5px; }
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 18px; }
+    .card h3 { margin: 0 0 12px; font-size: 15px; font-weight: 600; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+    .card-header h3 { margin: 0; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 600; }
+    tr:hover td { background: rgba(255,255,255,.02); }
+    .pill { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .pill.prem { background: rgba(255,215,0,.15); color: #ffd700; }
+    .pill.free { background: rgba(255,255,255,.06); color: var(--muted); }
+    .pill.susp { background: rgba(255,107,107,.15); color: var(--danger); }
+    .pill.ok { background: rgba(61,220,151,.12); color: var(--success); }
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+    .toolbar input, .toolbar select, .form-control { padding: 9px 12px; border-radius: 10px; font-size: 13px; background: rgba(255,255,255,.04); border: 1px solid var(--border); color: var(--text); outline: none; }
+    .toolbar input:focus, .toolbar select:focus, .form-control:focus { border-color: var(--accent); }
+    .toolbar input { min-width: 180px; }
+    textarea.form-control { width: 100%; min-height: 90px; resize: vertical; font-family: inherit; }
+    .form-row { margin-bottom: 12px; }
+    .form-row label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; font-weight: 500; }
+    .form-row input, .form-row select, .form-row textarea { width: 100%; padding: 10px 12px; border-radius: 10px; font-size: 13px; background: rgba(255,255,255,.04); border: 1px solid var(--border); color: var(--text); outline: none; }
+    .modal { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.6); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .modal-card { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 16px; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; padding: 24px; box-shadow: 0 24px 80px rgba(0,0,0,.5); }
+    .modal-card.wide { max-width: 900px; }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .modal-head h3 { margin: 0; font-size: 17px; }
+    .panel { display: none; }
+    .panel.active { display: block; animation: fadeIn .2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    .split { display: grid; grid-template-columns: 1fr 300px; gap: 18px; }
+    @media (max-width: 1000px) {
+      .sidebar { display: none; }
+      .split { grid-template-columns: 1fr; }
+      body.sidebar-open .sidebar { display: flex; position: fixed; z-index: 50; left: 0; top: 0; }
+      .mobile-menu-btn { display: inline-flex !important; }
+    }
+    .mobile-menu-btn { display: none; }
+    .log-line { font-size: 12px; color: var(--muted); padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.03); font-family: ui-monospace, monospace; }
+    .device-row { display: flex; justify-content: space-between; gap: 10px; padding: 10px; background: rgba(255,255,255,.03); border-radius: 8px; margin-bottom: 6px; font-size: 13px; }
+    .empty { color: var(--muted); font-size: 13px; padding: 20px; text-align: center; }
+    .small-muted { font-size: 12px; color: var(--muted); }
+    #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 10px 18px; border-radius: 10px; z-index: 999; background: linear-gradient(90deg,var(--accent),var(--accent2)); color: #041025; font-weight: 700; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div id="loginScreen">
+    <div class="login-card">
+      <h1>MyJournal+ Admin</h1>
+      <p class="sub">Sign in with an admin account</p>
+      <div id="loginError" class="login-error"></div>
+      <input id="adminEmail" type="email" placeholder="Admin email" autocomplete="username" />
+      <input id="adminPassword" type="password" placeholder="Password" autocomplete="current-password" />
+      <button id="btnAdminLogin" class="btn primary" style="width:100%;margin-top:4px">Sign in</button>
+      <p style="font-size:11px;color:var(--muted);margin-top:16px;text-align:center">User doc must include <code>roles</code> containing <code>admin</code></p>
+    </div>
+  </div>
+
+  <div id="appShell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">MyJournal+<span>Admin Console</span></div>
+      <nav class="nav">
+        <div class="nav-section">Overview</div>
+        <button class="nav-item active" data-panel="overview"><span class="icon">📊</span> Dashboard</button>
+        <div class="nav-section">People</div>
+        <button class="nav-item" data-panel="users"><span class="icon">👥</span> Users</button>
+        <button class="nav-item" data-panel="referrals"><span class="icon">🔗</span> Referrals</button>
+        <button class="nav-item" data-panel="devices"><span class="icon">📱</span> Devices</button>
+        <div class="nav-section">Messaging</div>
+        <button class="nav-item" data-panel="messages"><span class="icon">💬</span> In-app Messages</button>
+        <button class="nav-item" data-panel="fcm"><span class="icon">🔔</span> FCM Center</button>
+        <div class="nav-section">Premium &amp; Config</div>
+        <button class="nav-item" data-panel="premium"><span class="icon">⭐</span> Premium</button>
+        <button class="nav-item" data-panel="promos"><span class="icon">🎟️</span> Promo Codes</button>
+        <button class="nav-item" data-panel="features"><span class="icon">🎛️</span> Feature Flags</button>
+        <button class="nav-item" data-panel="slots"><span class="icon">🧩</span> App Slots</button>
+        <div class="nav-section">Content &amp; System</div>
+        <button class="nav-item" data-panel="content"><span class="icon">📝</span> Content</button>
+        <button class="nav-item" data-panel="ai"><span class="icon">🤖</span> AI Insights</button>
+        <button class="nav-item" data-panel="queues"><span class="icon">📋</span> Queues</button>
+        <button class="nav-item" data-panel="logs"><span class="icon">📜</span> Audit Log</button>
+        <button class="nav-item" data-panel="export"><span class="icon">📤</span> Import / Export</button>
+      </nav>
+      <div class="sidebar-foot">
+        <div id="adminIdentity" style="margin-bottom:8px">—</div>
+        <button id="btnSignOut" class="btn small" style="width:100%">Sign out</button>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="btn small mobile-menu-btn" id="mobileMenuBtn">☰</button>
+          <h2 id="pageTitle">Dashboard</h2>
+        </div>
+        <div class="topbar-actions">
+          <button id="btnRefreshAll" class="btn small">↻ Refresh</button>
+          <span id="adminStatus" class="pill ok">Online</span>
+        </div>
+      </header>
+
+      <div class="content">
+        <section id="panel-overview" class="panel active">
+          <div class="kpi-grid" id="kpiGrid">
+            <div class="kpi"><div class="label">Total users</div><div class="value" id="kpiTotal">—</div></div>
+            <div class="kpi"><div class="label">Premium</div><div class="value" id="kpiPremium">—</div></div>
+            <div class="kpi"><div class="label">Free</div><div class="value" id="kpiFree">—</div></div>
+            <div class="kpi"><div class="label">New (7 days)</div><div class="value" id="kpiNew7">—</div></div>
+            <div class="kpi"><div class="label">FCM opted-in</div><div class="value" id="kpiFcm">—</div></div>
+            <div class="kpi"><div class="label">Referrals (sum)</div><div class="value" id="kpiRef">—</div></div>
+            <div class="kpi"><div class="label">Suspended</div><div class="value" id="kpiSusp">—</div></div>
+            <div class="kpi"><div class="label">With PIN</div><div class="value" id="kpiPin">—</div></div>
+          </div>
+          <div class="card"><h3>Recent admin activity</h3><div id="overviewLog" style="max-height:280px;overflow:auto"></div></div>
+        </section>
+
+        <section id="panel-users" class="panel">
+          <div class="toolbar">
+            <input id="userSearch" type="search" placeholder="Search email, name, uid…" />
+            <select id="filterPremium">
+              <option value="all">All users</option>
+              <option value="premium">Premium</option>
+              <option value="free">Free</option>
+              <option value="suspended">Suspended</option>
+              <option value="hasFcm">Has FCM token</option>
+              <option value="hasPin">Has PIN</option>
+            </select>
+            <button id="btnRefreshUsers" class="btn small">Refresh</button>
+            <button id="openCreateUserBtn" class="btn small primary">+ Create user</button>
+            <button id="bulkMessageBtn" class="btn small">Message selected</button>
+            <button id="bulkSuspendBtn" class="btn small danger">Suspend selected</button>
+            <button id="bulkPremiumBtn" class="btn small">Grant Premium selected</button>
+          </div>
+          <div class="split">
+            <div class="card" style="margin:0">
+              <div class="table-wrap">
+                <table>
+                  <thead><tr>
+                    <th><input type="checkbox" id="selectAllCheckbox" /></th>
+                    <th>User</th><th>Premium</th><th>Referrals</th><th>Created</th><th>Status</th><th></th>
+                  </tr></thead>
+                  <tbody id="usersTbody"></tbody>
+                </table>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+                <span class="small-muted" id="usersCount">0 users</span>
+                <div style="display:flex;gap:6px">
+                  <button id="prevPage" class="btn small" disabled>Prev</button>
+                  <button id="nextPage" class="btn small" disabled>Next</button>
+                </div>
+              </div>
+            </div>
+            <div class="card" style="margin:0">
+              <h3>Selected user</h3>
+              <div id="selectedUserArea" class="empty">Select a user from the table</div>
+              <div id="selectedUserControls" class="hidden" style="flex-direction:column;gap:6px;margin-top:12px">
+                <button id="btnViewUser" class="btn small">View full details</button>
+                <button id="btnTogglePremium" class="btn small">Toggle Premium</button>
+                <button id="btnEditRoles" class="btn small">Edit roles</button>
+                <button id="btnResetPin" class="btn small">Reset PIN</button>
+                <button id="btnForceLogoutAll" class="btn small">Force logout all devices</button>
+                <button id="btnCreateMessage" class="btn small">Send in-app message</button>
+                <button id="btnSendResetEmail" class="btn small">Password reset email</button>
+                <button id="btnExportUser" class="btn small">Export data</button>
+                <button id="btnSuspendUser" class="btn small danger">Suspend</button>
+                <button id="btnUnsuspendUser" class="btn small">Unsuspend</button>
+                <button id="btnSoftDelete" class="btn small danger">Soft delete</button>
+                <button id="btnHardDelete" class="btn small danger">Hard delete (request)</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="panel-referrals" class="panel">
+          <div class="card">
+            <div class="card-header"><h3>Referral leaderboard</h3><button id="btnRefreshRefs" class="btn small">Refresh</button></div>
+            <div class="table-wrap"><table><thead><tr><th>User</th><th>Code</th><th>Count</th><th>Premium?</th><th>Actions</th></tr></thead><tbody id="refsTbody"></tbody></table></div>
+          </div>
+        </section>
+
+        <section id="panel-devices" class="panel">
+          <div class="card">
+            <div class="card-header"><h3>Recent devices</h3><button id="btnRefreshDevices" class="btn small">Refresh</button></div>
+            <p class="small-muted">From user <code>devices</code> arrays.</p>
+            <div id="devicesGlobalList" class="empty">Load to populate…</div>
+          </div>
+        </section>
+
+        <section id="panel-messages" class="panel">
+          <div class="card">
+            <h3>Compose in-app message</h3>
+            <p class="small-muted">Writes to <code>users/{uid}/messages</code> (popup on home).</p>
+            <div class="form-row"><label>Title</label><input id="msgTitle" class="form-control" /></div>
+            <div class="form-row"><label>Body</label><textarea id="msgBody" class="form-control" rows="4"></textarea></div>
+            <div class="form-row"><label>Target</label>
+              <select id="msgTarget" class="form-control">
+                <option value="selected">Selected users (Users tab)</option>
+                <option value="all">All users</option>
+                <option value="premium">Premium only</option>
+                <option value="free">Free only</option>
+                <option value="uids">Specific UIDs</option>
+              </select>
+            </div>
+            <div class="form-row"><label>UIDs (if Specific)</label><input id="msgUids" class="form-control" placeholder="uid1, uid2" /></div>
+            <button id="btnSendInApp" class="btn primary">Send messages</button>
+            <div id="msgStatus" class="small-muted" style="margin-top:10px"></div>
+          </div>
+        </section>
+
+        <section id="panel-fcm" class="panel">
+          <div class="card">
+            <h3>FCM Notification Center</h3>
+            <p class="small-muted">Queues to <code>fcm_requests</code>. Deliver via Cloud Function + Admin SDK.</p>
+            <div class="form-row"><label>Title</label><input id="fcmTitle" class="form-control" /></div>
+            <div class="form-row"><label>Body</label><textarea id="fcmBody" class="form-control" rows="3"></textarea></div>
+            <div class="form-row"><label>Target</label>
+              <select id="fcmTargetType" class="form-control">
+                <option value="all">All with tokens</option>
+                <option value="premium">Premium with tokens</option>
+                <option value="uids">Specific UIDs</option>
+              </select>
+            </div>
+            <div class="form-row"><label>UIDs</label><input id="fcmTargetUids" class="form-control" /></div>
+            <div class="form-row"><label>Image URL (optional)</label><input id="fcmImage" class="form-control" /></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button id="sendFcmBtn" class="btn primary">Queue FCM</button>
+              <button id="sendFcmFnBtn" class="btn">Send via Callable</button>
+            </div>
+            <div id="fcmStatus" class="small-muted" style="margin-top:10px"></div>
+          </div>
+          <div class="card"><h3>Recent FCM requests</h3><div id="fcmQueueList" class="empty">—</div></div>
+        </section>
+
+        <section id="panel-premium" class="panel">
+          <div class="card">
+            <h3>Manual Premium grant / revoke</h3>
+            <div class="form-row"><label>User UID or email</label><input id="premUid" class="form-control" /></div>
+            <div class="form-row"><label>Reason</label><input id="premReason" class="form-control" placeholder="PayPal #, support ticket…" /></div>
+            <div style="display:flex;gap:8px">
+              <button id="btnGrantPrem" class="btn primary">Grant Premium</button>
+              <button id="btnRevokePrem" class="btn danger">Revoke Premium</button>
+            </div>
+            <div id="premStatus" class="small-muted" style="margin-top:10px"></div>
+          </div>
+          <div class="card">
+            <h3>Adjust referral count</h3>
+            <div class="form-row"><label>User UID</label><input id="refAdjUid" class="form-control" /></div>
+            <div class="form-row"><label>New count</label><input id="refAdjCount" type="number" min="0" class="form-control" value="0" /></div>
+            <label style="font-size:13px;display:flex;gap:8px;align-items:center;margin-bottom:12px"><input type="checkbox" id="refAdjUnlock" checked /> Auto-grant Premium if ≥ 3</label>
+            <button id="btnAdjRef" class="btn primary">Update count</button>
+          </div>
+        </section>
+
+        <section id="panel-promos" class="panel">
+          <div class="card">
+            <h3>Create promo code</h3>
+            <div class="form-row"><label>Code</label><input id="promoCode" class="form-control" style="text-transform:uppercase" /></div>
+            <div class="form-row"><label>Max uses (0 = unlimited)</label><input id="promoMax" type="number" class="form-control" value="100" /></div>
+            <div class="form-row"><label>Expires</label><input id="promoExp" type="date" class="form-control" /></div>
+            <button id="btnCreatePromo" class="btn primary">Create code</button>
+            <div id="promoStatus" class="small-muted" style="margin-top:10px"></div>
+          </div>
+          <div class="card"><h3>Active promo codes</h3><div id="promoList" class="empty">—</div></div>
+        </section>
+
+        <section id="panel-features" class="panel">
+          <div class="card">
+            <h3>Feature flags (<code>config/features</code>)</h3>
+            <label style="display:flex;gap:10px;align-items:center;margin-bottom:10px;font-size:13px"><input type="checkbox" id="flagAi" /> AI Insights enabled</label>
+            <label style="display:flex;gap:10px;align-items:center;margin-bottom:10px;font-size:13px"><input type="checkbox" id="flagMood" /> Mood tracker enabled</label>
+            <label style="display:flex;gap:10px;align-items:center;margin-bottom:10px;font-size:13px"><input type="checkbox" id="flagThemes" /> Themes enabled</label>
+            <label style="display:flex;gap:10px;align-items:center;margin-bottom:10px;font-size:13px"><input type="checkbox" id="flagDevices" /> Devices panel enabled</label>
+            <label style="display:flex;gap:10px;align-items:center;margin-bottom:10px;font-size:13px"><input type="checkbox" id="flagExport" /> Export enabled</label>
+            <label style="display:flex;gap:10px;align-items:center;margin-bottom:10px;font-size:13px"><input type="checkbox" id="flagAds" /> Ads enabled (global)</label>
+            <label style="display:flex;gap:10px;align-items:center;margin-bottom:10px;font-size:13px"><input type="checkbox" id="flagMaint" /> Maintenance mode</label>
+            <div class="form-row"><label>Maintenance message</label><input id="flagMaintMsg" class="form-control" /></div>
+            <button id="btnSaveFlags" class="btn primary">Save flags</button>
+            <div id="flagsStatus" class="small-muted" style="margin-top:10px"></div>
+          </div>
+        </section>
+
+        <section id="panel-slots" class="panel">
+          <div class="card">
+            <h3>App content slots</h3>
+            <p class="small-muted">Home: <code>#admin-feature-slot</code> · Settings: <code>#admin-settings-slot</code> · Stored in <code>config/slots</code></p>
+            <div class="form-row"><label>Home HTML</label><textarea id="slotHome" class="form-control" rows="5"></textarea></div>
+            <div class="form-row"><label>Settings HTML</label><textarea id="slotSettings" class="form-control" rows="5"></textarea></div>
+            <button id="btnSaveSlots" class="btn primary">Publish slots</button>
+            <div id="slotsStatus" class="small-muted" style="margin-top:10px"></div>
+          </div>
+        </section>
+
+        <section id="panel-content" class="panel">
+          <div class="card">
+            <h3>Entry metadata browser</h3>
+            <div class="toolbar">
+              <input id="contentUid" placeholder="Filter by user UID" />
+              <button id="btnLoadEntries" class="btn small">Load recent</button>
+            </div>
+            <div id="entriesMetaList" class="empty">—</div>
+          </div>
+        </section>
+
+        <section id="panel-ai" class="panel">
+          <div class="card">
+            <h3>AI Insights config</h3>
+            <div class="form-row"><label>Backend AI URL</label><input id="aiBackendUrl" class="form-control" placeholder="https://…/api/ai-insights" /></div>
+            <div class="form-row"><label>Notes</label><textarea id="aiNotes" class="form-control" rows="2"></textarea></div>
+            <p class="small-muted" style="margin-top:8px;margin-bottom:12px">The Gemini API key is stored securely as GEMINI_API_KEY in your Render backend's Environment settings. Never paste the secret key here. Save only the backend endpoint URL below.</p>
+            <button id="btnSaveAi" class="btn primary">Save AI config</button>
+            <div id="aiStatus" class="small-muted" style="margin-top:10px"></div>
+          </div>
+        </section>
+
+        <section id="panel-queues" class="panel">
+          <div class="card">
+            <div class="card-header"><h3>Request queues</h3><button id="btnRefreshQueues" class="btn small">Refresh</button></div>
+            <h4 style="font-size:13px;color:var(--muted)">admin_requests</h4>
+            <div id="adminReqList" class="empty">—</div>
+            <h4 style="font-size:13px;color:var(--muted);margin-top:16px">fcm_requests</h4>
+            <div id="fcmReqList" class="empty">—</div>
+          </div>
+        </section>
+
+        <section id="panel-logs" class="panel">
+          <div class="card">
+            <div class="card-header"><h3>Audit log</h3><button id="btnRefreshLogs" class="btn small">Refresh</button></div>
+            <div id="auditLog" style="max-height:60vh;overflow:auto"></div>
+          </div>
+        </section>
+
+        <section id="panel-export" class="panel">
+          <div class="card">
+            <h3>Export</h3>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button id="btnExportAllUsers" class="btn">Export all users (CSV)</button>
+              <button id="btnExportPremium" class="btn">Export premium (CSV)</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Import users (JSON)</h3>
+            <p class="small-muted">Array of user objects; optional nested entries/moods.</p>
+            <input id="importJsonFile" type="file" accept=".json" />
+            <button id="startImportBtn" class="btn primary" style="margin-top:10px">Start import</button>
+            <div id="importStatus" class="small-muted" style="margin-top:10px"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div id="userModal" class="modal hidden">
+    <div class="modal-card wide">
+      <div class="modal-head"><h3 id="modalTitle">User details</h3><button id="modalClose" class="btn small">Close</button></div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <div id="createUserModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head"><h3>Create user</h3><button id="createUserClose" class="btn small">Close</button></div>
+      <div class="form-row"><label>Email</label><input id="newUserEmail" type="email" class="form-control" /></div>
+      <div class="form-row"><label>Username</label><input id="newUserUsername" class="form-control" /></div>
+      <div class="form-row"><label>Temp password</label><input id="newUserPassword" type="password" class="form-control" /></div>
+      <label style="font-size:13px;display:flex;gap:8px;align-items:center;margin-bottom:12px"><input id="newUserSendReset" type="checkbox" /> Send password reset after create</label>
+      <div style="display:flex;gap:8px">
+        <button id="createUserBtn" class="btn primary">Create (callable)</button>
+        <button id="createUserQueueBtn" class="btn">Queue in Firestore</button>
+      </div>
+      <div id="createUserStatus" class="small-muted" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions-compat.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

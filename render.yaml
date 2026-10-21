@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: myjournalplus-gemini-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: FIREBASE_PROJECT_ID
+        value: myjournal-plus
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FRONTEND_ORIGINS
+        value: https://myjournalplus.com,https://www.myjournalplus.com
